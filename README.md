@@ -1,10 +1,6 @@
 # fluent-plugin-hash-forward
 
-## Component
-
-### HashForwardOutput
-
-Fluentd plugin to forward some servers using calculated hash of tag
+Fluentd plugin to keep forwarding messages of a specific tag pattern to a specific node
 
 - Forward some servers
 - Same tag messages forward to the same server
@@ -12,7 +8,7 @@ Fluentd plugin to forward some servers using calculated hash of tag
 
 ## Configuration
 
-## HashForwardOutput
+Example:
 
     <match pattern>
       type hash_forward
@@ -33,14 +29,24 @@ Fluentd plugin to forward some servers using calculated hash of tag
       </secondary>
     </match>
 
-## TODO
+## Parameters
 
-* tests
-* documents
+Basically same with out\_forward plugin. See [http://docs.fluentd.org/articles/out_forward](http://docs.fluentd.org/ja/articles/out_forward). 
+
+Following parameters are additionally available:
+
+* remove\_prefix
+
+    Specify a string to remove a prefix from the input tag
+
+* add\_prefix
+
+    Specify a string to add a prefix from the input tag
 
 ## Copyright
 
 * Copyright
   * Copyright (c) 2012- Ryosuke IWANAGA (riywo)
+  * Copyright (c) 2013- Naotoshi SEO (sonots)
 * License
   * Apache License, Version 2.0

@@ -77,16 +77,13 @@ class Fluent::HashForwardOutput < Fluent::Output
   end
 
   def emit(tag, es, chain)
-    if @remove_prefix and
-        ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix)
-      tag = tag[@removed_length..-1]
+    if @remove_prefix
+      if (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix
+        tag = tag[@removed_length..-1]
+      end
     end 
     if @add_prefix
-      tag = if tag.length > 0
-              @added_prefix_string + tag
-            else
-              @add_prefix
-            end
+      tag = (tag.length > 0 ? @added_prefix_string + tag : @add_prefix)
     end
 
     index = server_index(tag)
@@ -98,8 +95,8 @@ class Fluent::HashForwardOutput < Fluent::Output
     end
   end
 
-  def server_index(tag)
+  def server_index(key)
     require 'murmurhash3'
-    MurmurHash3::V32.str_hash(tag) % @servers.size
+    MurmurHash3::V32.str_hash(key) % @servers.size
   end
 end
