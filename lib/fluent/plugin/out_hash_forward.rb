@@ -3,6 +3,7 @@ class Fluent::HashForwardOutput < Fluent::Output
 
   config_param :remove_prefix, :string, :default => nil
   config_param :add_prefix, :string, :default => nil
+  config_param :hash_key, :string, :default => nil
 
   def configure(conf)
     super
@@ -77,19 +78,17 @@ class Fluent::HashForwardOutput < Fluent::Output
   end
 
   def emit(tag, es, chain)
-    if @remove_prefix and
-        ( (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix)
-      tag = tag[@removed_length..-1]
+    if @remove_prefix
+      if (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix
+        tag = tag[@removed_length..-1]
+      end
     end 
     if @add_prefix
-      tag = if tag.length > 0
-              @added_prefix_string + tag
-            else
-              @add_prefix
-            end
+      tag = (tag.length > 0 ? @added_prefix_string + tag : @add_prefix)
     end
 
-    index = server_index(tag)
+    hash_key = @hash_key ? expand_placeholder(@hash_key, tag) : tag
+    index = server_index(hash_key)
     output = @forward[index]
     if output
       output.emit(tag, es, chain)
@@ -98,8 +97,26 @@ class Fluent::HashForwardOutput < Fluent::Output
     end
   end
 
-  def server_index(tag)
+  def server_index(key)
     require 'murmurhash3'
-    MurmurHash3::V32.str_hash(tag) % @servers.size
+    MurmurHash3::V32.str_hash(key) % @servers.size
+  end
+
+  # Replace ${tag} and ${tags} placeholders in a string
+  #
+  # @param [String] str    the string to be expanded
+  # @param [String] tag    tag of a message
+  def expand_placeholder(str, tag)
+    struct = UndefOpenStruct.new
+    struct.tag  = tag
+    struct.tags = tag.split('.')
+    str = str.gsub(/\$\{([^}]+)\}/, '#{\1}') # ${..} => #{..}
+    eval "\"#{str}\"", struct.instance_eval { binding }
+  end
+
+  class UndefOpenStruct < OpenStruct
+    (Object.instance_methods).each do |m|
+      undef_method m unless m.to_s =~ /^__|respond_to_missing\?|object_id|public_methods|instance_eval|method_missing|define_singleton_method|respond_to\?|new_ostruct_member/
+    end
   end
 end
