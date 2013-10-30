@@ -43,6 +43,22 @@ Following parameters are additionally available:
 
     Specify a string to add a prefix from the input tag
 
+* hash\_key
+
+    Specify a placeholder string to be used as a key for hashing. See Placeholders section for more details. Default uses `${tag}`as a hash key.
+
+### Placeholders
+
+You can use following placeholders:
+
+* ${tag} input tag
+* ${tags} input tag splitted by '.'
+
+It is also possible to write a ruby code in placeholders, so you may write some codes as
+
+* ${tags[0]}
+* ${tags.last}
+
 ## Copyright
 
 * Copyright

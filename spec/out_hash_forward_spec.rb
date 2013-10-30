@@ -61,6 +61,7 @@ describe Fluent::HashForwardOutput do
       let(:config) { CONFIG + %[remove_prefix test] }
       before do
         Fluent::Engine.stub(:now).and_return(time)
+        Fluent::HashForwardOutput.any_instance.should_receive(:server_index).with('tag').and_return(0)
         Fluent::ForwardOutput.any_instance.should_receive(:emit).with('tag', es, chain)
       end
       it 'should forward with removing prefix' do
@@ -73,10 +74,27 @@ describe Fluent::HashForwardOutput do
       let(:config) { CONFIG + %[add_prefix add] }
       before do
         Fluent::Engine.stub(:now).and_return(time)
+        Fluent::HashForwardOutput.any_instance.should_receive(:server_index).with("add.#{tag}").and_return(0)
         Fluent::ForwardOutput.any_instance.should_receive(:emit).with("add.#{tag}", es, chain)
       end
       it 'should forward with adding prefix' do
         driver.instance.emit(tag, es, chain)
+      end
+    end
+
+    context 'test hash_key' do
+      let(:tag1) { 'test.tag1' }
+      let(:tag2) { 'test.tag2' }
+      let(:config) { CONFIG + %[hash_key ${tags[0]}]}
+      before do
+        Fluent::Engine.stub(:now).and_return(time)
+        Fluent::HashForwardOutput.any_instance.should_receive(:server_index).twice.with('test').and_return(0)
+        Fluent::ForwardOutput.any_instance.should_receive(:emit).with(tag1, es, chain)
+        Fluent::ForwardOutput.any_instance.should_receive(:emit).with(tag2, es, chain)
+      end
+      it 'should forward to tags[0] hash' do
+        driver.instance.emit(tag1, es, chain)
+        driver.instance.emit(tag2, es, chain)
       end
     end
   end
