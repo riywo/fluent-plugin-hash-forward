@@ -35,14 +35,6 @@ Basically same with out\_forward plugin. See [http://docs.fluentd.org/articles/o
 
 Following parameters are additionally available:
 
-* remove\_prefix
-
-    Specify a string to remove a prefix from the input tag
-
-* add\_prefix
-
-    Specify a string to add a prefix from the input tag
-
 * hash\_key
 
     Specify a placeholder string to be used as a key for hashing. See Placeholders section for more details. Default uses `${tag}`as a hash key.

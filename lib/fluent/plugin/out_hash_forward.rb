@@ -4,13 +4,14 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
   Fluent::Plugin.register_output('hash_forward', self)
 
   config_param :hash_key, :string, :default => nil
-  attr_reader :regular_nodes
-  attr_reader :standby_nodes
 
   def configure(conf)
     super
     @standby_nodes, @regular_nodes = @nodes.partition {|n| n.standby? }
   end
+
+  attr_reader :regular_nodes
+  attr_reader :standby_nodes
 
   # Override
   def write_objects(tag, chunk)
