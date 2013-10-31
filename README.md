@@ -51,6 +51,17 @@ It is also possible to write a ruby code in placeholders, so you may write some 
 * ${tags[0]}
 * ${tags.last}
 
+For example, if your messages have tags like
+
+    foo.host1
+    foo.host2
+
+but, you want to send `foo.*` to the same node, 
+
+    hash_key ${tags[0..-2]}
+
+should work well. 
+
 ## Copyright
 
 * Copyright
