@@ -3,15 +3,28 @@ require 'fluent/plugin/out_forward'
 class Fluent::HashForwardOutput < Fluent::ForwardOutput
   Fluent::Plugin.register_output('hash_forward', self)
 
-  config_param :hash_key, :string, :default => nil
+  config_param :hash_key_slice, :string, :default => nil
 
   def configure(conf)
     super
     @standby_nodes, @regular_nodes = @nodes.partition {|n| n.standby? }
+
+    if @hash_key_slice
+      lindex, rindex = @hash_key_slice.split('..', 2)
+      if lindex.nil? or rindex.nil? or lindex !~ /^-?\d+$/ or rindex !~ /^-?\d+$/
+        raise Fluent::ConfigError, "out_hash_forard: hash_key_slice must be formatted like [num]..[num]"
+      else
+        @hash_key_slice_lindex = lindex.to_i
+        @hash_key_slice_rindex = rindex.to_i
+      end
+    end
   end
 
+  # for test
   attr_reader :regular_nodes
   attr_reader :standby_nodes
+  attr_accessor :hash_key_slice_lindex
+  attr_accessor :hash_key_slice_rindex
 
   # Override
   def write_objects(tag, chunk)
@@ -47,7 +60,7 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
 
   # Get nodes (a regular_node and a standby_node if available) using hash algorithm
   def nodes(tag)
-    hash_key = @hash_key ? expand_placeholder(@hash_key, tag) : tag
+    hash_key = @hash_key_slice ? perform_hash_key_slice(tag) : tag
     regular_index = get_index(hash_key, regular_nodes.size)
     standby_index = standby_nodes.size > 0 ? get_index(hash_key, standby_nodes.size) : 0
     [regular_nodes[regular_index], standby_nodes[standby_index]].compact
@@ -59,21 +72,9 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     MurmurHash3::V32.str_hash(key) % size
   end
 
-  # Replace ${tag} and ${tags} placeholders in a string
-  #
-  # @param [String] str    the string to be expanded
-  # @param [String] tag    tag of a message
-  def expand_placeholder(str, tag)
-    struct = UndefOpenStruct.new
-    struct.tag  = tag
-    struct.tags = tag.split('.')
-    str = str.gsub(/\$\{([^}]+)\}/, '#{\1}') # ${..} => #{..}
-    eval "\"#{str}\"", struct.instance_eval { binding }
-  end
-
-  class UndefOpenStruct < OpenStruct
-    (Object.instance_methods).each do |m|
-      undef_method m unless m.to_s =~ /^__|respond_to_missing\?|object_id|public_methods|instance_eval|method_missing|define_singleton_method|respond_to\?|new_ostruct_member/
-    end
+  def perform_hash_key_slice(tag)
+    tags = tag.split('.')
+    sliced = tags[@hash_key_slice_lindex..@hash_key_slice_rindex]
+    return sliced.nil? ? "" : sliced.join('.')
   end
 end

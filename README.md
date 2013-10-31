@@ -35,39 +35,33 @@ Basically same with out\_forward plugin. See [http://docs.fluentd.org/articles/o
 
 Following parameters are additionally available:
 
-* hash\_key
+* hash\_key\_slice *min*..*max*
 
-    Specify a placeholder string to be used as a key for hashing. See Placeholders section for more details. Default uses `${tag}`as a hash key.
+    Use sliced `tag` as a hash key to determine a forwarding node. Default: use entire `tag`. 
 
-### Placeholders
+    For example, assume tags of input messages are like
 
-You can use following placeholders:
+        foo.bar.host1
+        foo.bar.host2
 
-* ${tag} input tag
-* ${tags} input tag splitted by '.'
+    but, you want to forward these messages to the same node, configure like
 
-It is also possible to write a ruby code in placeholders, so you may write some codes as
+        hash_key_slice 0..-2
 
-* ${tags[0]}
-* ${tags.last}
+    then, hash\_key becomes as `foo.bar` which results in forwarding these messages to the same node.
 
-For example, if your messages have tags like
-
-    foo.host1
-    foo.host2
-
-but, you want to send `foo.*` to the same node, 
-
-    hash_key ${tags[0..-2]}
-
-should work well. 
+    FYI: This option behaves like `tag.split('.').slice(min..max)`.
 
 ## ToDo
 
 * Consistent hashing
 
    * Consistent hashing is useful on adding or removing nodes dynamically, but currently `out_hash_forward` does not support such a dynamical feature, so consistent hashing is just useless now. To effectively support consistent hashing, this plugin must support ways to add or remove nodes dynamically by preparing http api or reading nodes information from redis or memcached, etc. 
- 
+
+## ChangeLog
+
+See [CHANGELOG.md](CHANGELOG.md) for details. 
+
 ## Copyright
 
 * Copyright
