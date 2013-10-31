@@ -1,105 +1,61 @@
-class Fluent::HashForwardOutput < Fluent::Output
+require 'fluent/plugin/out_forward'
+
+class Fluent::HashForwardOutput < Fluent::ForwardOutput
   Fluent::Plugin.register_output('hash_forward', self)
 
-  config_param :remove_prefix, :string, :default => nil
-  config_param :add_prefix, :string, :default => nil
   config_param :hash_key, :string, :default => nil
+  attr_reader :regular_nodes
+  attr_reader :standby_nodes
 
   def configure(conf)
     super
+    @standby_nodes, @regular_nodes = @nodes.partition {|n| n.standby? }
+  end
 
-    if @remove_prefix
-      @removed_prefix_string = @remove_prefix + '.'
-      @removed_length = @removed_prefix_string.length
-    end
-    if @add_prefix
-      @added_prefix_string = @add_prefix + '.'
-    end
+  # Override
+  def write_objects(tag, chunk)
+    return if chunk.empty?
 
-    @servers = []
-    @forward_elements = []
-    conf.elements.each {|element|
-      if element.name == "server"
-        element["weight"] = 100
-        @servers.push(element)
-      else
-        @forward_elements.push(element)
+    error = nil
+
+    nodes = nodes(tag)
+
+    # below is just copy from out_forward
+    nodes.each do |node|
+      if node.available?
+        begin
+          send_data(node, tag, chunk)
+          return
+        rescue
+          # for load balancing during detecting crashed servers
+          error = $!  # use the latest error
+        end
       end
-    }
-    conf.elements.clear
-
-    @forward_conf = {}
-    conf.each {|k, v|
-      if !self.class.config_params.keys.index(k.to_sym) and k != "type"
-        @forward_conf[k] = v
-        conf.delete(k)
-      end
-    }
-
-    @forward = @servers.map {|server|
-      elements = @forward_elements + [server]
-      plant(@forward_conf, elements)
-    }
-
-    self
-  end
-
-  def shutdown
-    super
-    @forward.each do |output|
-      output.shutdown
-    end
-  end
-
-  def spec(conf, elements)
-    Fluent::Config::Element.new('instance', '', conf, elements)
-  end
-
-  def plant(conf, elements)
-    output = nil
-    server = elements.last["host"]+":"+elements.last["port"]
-    begin
-      output = Fluent::Plugin.new_output('forward')
-      output.configure(spec(conf, elements))
-      output.start
-      $log.info "out_hash_forward plants new output: for server '#{server}'"
-    rescue Fluent::ConfigError => e
-      $log.error "failed to configure sub output: #{e.message}"
-      $log.error e.backtrace.join("\n")
-      $log.error "Cannot output messages with server '#{server}'"
-      output = nil
-    rescue StandardError => e
-      $log.error "failed to configure/start sub output: #{e.message}"
-      $log.error e.backtrace.join("\n")
-      $log.error "Cannot output messages with server '#{server}'"
-      output = nil
-    end
-    output
-  end
-
-  def emit(tag, es, chain)
-    if @remove_prefix
-      if (tag.start_with?(@removed_prefix_string) and tag.length > @removed_length) or tag == @remove_prefix
-        tag = tag[@removed_length..-1]
-      end
-    end 
-    if @add_prefix
-      tag = (tag.length > 0 ? @added_prefix_string + tag : @add_prefix)
     end
 
-    hash_key = @hash_key ? expand_placeholder(@hash_key, tag) : tag
-    index = server_index(hash_key)
-    output = @forward[index]
-    if output
-      output.emit(tag, es, chain)
+    if error
+      raise error
     else
-      chain.next
+      raise "no nodes are available"  # TODO message
     end
   end
 
-  def server_index(key)
+  # Override: I don't use weight
+  def rebuild_weight_array
+  end
+
+  # Get nodes (a regular_node and a standby_node if available) using hash algorithm
+  def nodes(tag)
+    hash_key = @hash_key ? expand_placeholder(@hash_key, tag) : tag
+    regular_index = get_index(hash_key, regular_nodes.size)
+    standby_index = standby_nodes.size > 0 ? get_index(hash_key, standby_nodes.size) : 0
+    [regular_nodes[regular_index], standby_nodes[standby_index]].compact
+  end
+
+  # hashing(key) mod N
+  def get_index(key, size)
     require 'murmurhash3'
-    MurmurHash3::V32.str_hash(key) % @servers.size
+    MurmurHash3::V32.str_hash(key) % size
   end
 
   # Replace ${tag} and ${tags} placeholders in a string
