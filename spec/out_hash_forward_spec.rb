@@ -29,6 +29,73 @@ describe Fluent::HashForwardOutput do
     context 'default behavior' do
       it { lambda{ driver }.should_not raise_error }
     end
+
+    describe 'bad hash_key_slice' do
+     context 'string' do
+       let(:config) { CONFIG + %[hash_key_slice a..b] }
+       it { lambda{ driver }.should raise_error(Fluent::ConfigError) }
+     end
+
+     context 'no rindex' do
+       let(:config) { CONFIG + %[hash_key_slice 0..] }
+       it { lambda{ driver }.should raise_error(Fluent::ConfigError) }
+     end
+
+     context 'no lindex' do
+       let(:config) { CONFIG + %[hash_key_slice ..1] }
+       it { lambda{ driver }.should raise_error(Fluent::ConfigError) }
+     end
+
+     context 'bad format' do
+       let(:config) { CONFIG + %[hash_key_slice 0,1] }
+       it { lambda{ driver }.should raise_error(Fluent::ConfigError) }
+     end
+    end
+  end
+
+  describe 'test perform_hash_key_slice' do
+    # actually the same behavior with ruby Array, so just conforming ruby Array#slice
+    let(:tag) { 'tag0.tag1' }
+    context 'larger than tags size' do
+      let(:config) { CONFIG + %[hash_key_slice 1..10] }
+      it { expect(driver.instance.perform_hash_key_slice(tag)).to eq('tag1') }
+    end
+
+    context 'rindex is smaller than lindex' do
+      let(:config) { CONFIG + %[hash_key_slice 1..0] }
+      it { expect(driver.instance.perform_hash_key_slice(tag)).to eq('') }
+    end
+
+    context 'rindex is -1' do
+      let(:config) { CONFIG + %[hash_key_slice 0..-1] }
+      it { expect(driver.instance.perform_hash_key_slice(tag)).to eq(tag) }
+    end
+
+    context 'rindex is -2' do
+      let(:config) { CONFIG + %[hash_key_slice 0..-2] }
+      it { expect(driver.instance.perform_hash_key_slice(tag)).to eq('tag0') }
+    end
+
+    context 'rindex is large negative integer' do
+      let(:config) { CONFIG + %[hash_key_slice 0..-10] }
+      it { expect(driver.instance.perform_hash_key_slice(tag)).to eq('') }
+    end
+
+    context 'lindex is -1' do
+      let(:config) { CONFIG + %[hash_key_slice -1..10] }
+      it { expect(driver.instance.perform_hash_key_slice(tag)).to eq('tag1') }
+    end
+
+    context 'lindex is -2' do
+      let(:config) { CONFIG + %[hash_key_slice -2..10] }
+      it { expect(driver.instance.perform_hash_key_slice(tag)).to eq(tag) }
+    end
+
+    context 'lindex is large negatize integer' do
+      # this behavior looks wierd for me
+      let(:config) { CONFIG + %[hash_key_slice -3..10] }
+      it { expect(driver.instance.perform_hash_key_slice(tag)).to eq('') }
+    end
   end
 
   describe 'test hashing' do
@@ -57,10 +124,10 @@ describe Fluent::HashForwardOutput do
       end
     end
 
-    context 'test hash_key' do
+    context 'test hash_key_slice' do
       let(:tag1) { 'test.tag1' }
       let(:tag2) { 'test.tag2' }
-      let(:config) { CONFIG + %[hash_key ${tags[0..-2]}] }
+      let(:config) { CONFIG + %[hash_key_slice 0..-2] }
       before do
         @node1 = driver.instance.nodes(tag1).first
       end
