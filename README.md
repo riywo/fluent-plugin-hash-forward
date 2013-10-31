@@ -62,6 +62,12 @@ but, you want to send `foo.*` to the same node,
 
 should work well. 
 
+## ToDo
+
+* Consistent hashing
+
+   * Consistent hashing is useful on adding or removing nodes dynamically, but currently `out_hash_forward` does not support such a dynamical feature, so consistent hashing is just useless now. To effectively support consistent hashing, this plugin must support ways to add or remove nodes dynamically by preparing http api or reading nodes information from redis or memcached, etc. 
+ 
 ## Copyright
 
 * Copyright
