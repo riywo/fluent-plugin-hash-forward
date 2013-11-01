@@ -2,10 +2,6 @@
 
 Fluentd plugin to keep forwarding messages of a specific tag pattern to a specific node
 
-- Forward some servers
-- Same tag messages forward to the same server
-    - Using Murmurhash
-
 ## Configuration
 
 Example:

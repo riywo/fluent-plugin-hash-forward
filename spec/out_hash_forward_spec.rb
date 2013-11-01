@@ -115,8 +115,8 @@ describe Fluent::HashForwardOutput do
       let(:tag1) { 'test.tag1' }
       let(:tag2) { 'test.tag2' }
       before do
-        MurmurHash3::V32.stub(:str_hash).with(tag1).and_return(0)
-        MurmurHash3::V32.stub(:str_hash).with(tag2).and_return(1)
+        driver.instance.stub(:str_hash).with(tag1).and_return(0)
+        driver.instance.stub(:str_hash).with(tag2).and_return(1)
         @node1 = driver.instance.nodes(tag1).first
       end
       it 'should forward to the different node' do

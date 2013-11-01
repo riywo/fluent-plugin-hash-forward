@@ -68,8 +68,12 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
 
   # hashing(key) mod N
   def get_index(key, size)
-    require 'murmurhash3'
-    MurmurHash3::V32.str_hash(key) % size
+    str_hash(key) % size
+  end
+
+  # the simplest hashing ever
+  def str_hash(key)
+    key.bytes.inject(&:+)
   end
 
   def perform_hash_key_slice(tag)
