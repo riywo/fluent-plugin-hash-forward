@@ -72,6 +72,7 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
   end
 
   # the simplest hashing ever
+  # https://gist.github.com/sonots/7263495
   def str_hash(key)
     key.bytes.inject(&:+)
   end
