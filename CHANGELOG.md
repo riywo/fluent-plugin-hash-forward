@@ -1,3 +1,9 @@
+# 0.2.0 (2013/11/02)
+
+Enhancement
+
+* Handling weight
+
 # 0.1.0 (2013/11/02)
 
 Enhancement
