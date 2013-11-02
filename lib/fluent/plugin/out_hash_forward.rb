@@ -7,8 +7,6 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
 
   def configure(conf)
     super
-    @standby_nodes, @regular_nodes = @nodes.partition {|n| n.standby? }
-
     if @hash_key_slice
       lindex, rindex = @hash_key_slice.split('..', 2)
       if lindex.nil? or rindex.nil? or lindex !~ /^-?\d+$/ or rindex !~ /^-?\d+$/
@@ -19,12 +17,18 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
       end
     end
 
+    @standby_nodes, @regular_nodes = @nodes.partition {|n| n.standby? }
+    @regular_weight_array = build_weight_array(@regular_nodes)
+    @standby_weight_array = build_weight_array(@standby_nodes)
+
     @cache_nodes = {}
   end
 
   # for test
   attr_reader :regular_nodes
   attr_reader :standby_nodes
+  attr_reader :regular_weight_array
+  attr_reader :standby_weight_array
   attr_accessor :hash_key_slice_lindex
   attr_accessor :hash_key_slice_rindex
 
@@ -56,8 +60,20 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     end
   end
 
-  # Override: I don't use weight
+  # Override: I change weight algorithm
   def rebuild_weight_array
+  end
+
+  def build_weight_array(nodes)
+    # below is just a partial copy from out_forward#rebuild_weight_array
+    weight_array = []
+    gcd = nodes.map {|n| n.weight }.inject(0) {|r,w| r.gcd(w) }
+    nodes.each {|n|
+      (n.weight / gcd).times {
+        weight_array << n
+      }
+    }
+    weight_array
   end
 
   # Get nodes (a regular_node and a standby_node if available) using hash algorithm
@@ -66,9 +82,9 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
       return nodes
     end
     hash_key = @hash_key_slice ? perform_hash_key_slice(tag) : tag
-    regular_index = get_index(hash_key, regular_nodes.size)
-    standby_index = standby_nodes.size > 0 ? get_index(hash_key, standby_nodes.size) : 0
-    nodes = [regular_nodes[regular_index], standby_nodes[standby_index]].compact
+    regular_index = @regular_weight_array.size > 0 ? get_index(hash_key, @regular_weight_array.size) : 0
+    standby_index = @standby_weight_array.size > 0 ? get_index(hash_key, @standby_weight_array.size) : 0
+    nodes = [@regular_weight_array[regular_index], @standby_weight_array[standby_index]].compact
     @cache_nodes[tag] = nodes
   end
 
