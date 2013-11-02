@@ -18,6 +18,8 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
         @hash_key_slice_rindex = rindex.to_i
       end
     end
+
+    @cache_nodes = {}
   end
 
   # for test
@@ -60,10 +62,14 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
 
   # Get nodes (a regular_node and a standby_node if available) using hash algorithm
   def nodes(tag)
+    if nodes = @cache_nodes[tag]
+      return nodes
+    end
     hash_key = @hash_key_slice ? perform_hash_key_slice(tag) : tag
     regular_index = get_index(hash_key, regular_nodes.size)
     standby_index = standby_nodes.size > 0 ? get_index(hash_key, standby_nodes.size) : 0
-    [regular_nodes[regular_index], standby_nodes[standby_index]].compact
+    nodes = [regular_nodes[regular_index], standby_nodes[standby_index]].compact
+    @cache_nodes[tag] = nodes
   end
 
   # hashing(key) mod N
