@@ -117,7 +117,7 @@ describe Fluent::HashForwardOutput do
           <server>
             host 192.168.1.3
             port 24224
-            weight 1
+            weight 100
           </server>
           <server>
             host 192.168.1.4
@@ -189,10 +189,10 @@ describe Fluent::HashForwardOutput do
       let(:tag2) { 'test.tag2' }
       let(:config) { CONFIG + %[hash_key_slice 0..-2] }
       before do
-        @node1 = driver.nodes(tag1).first
+        @node = driver.nodes(tag1).first
       end
-      it 'should forward to the different node' do
-        expect(driver.nodes(tag2).first).to eq(@node1)
+      it 'should forward to the same node' do
+        expect(driver.nodes(tag2).first).to eq(@node)
       end
     end
   end
