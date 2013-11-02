@@ -1,3 +1,9 @@
+# 0.1.0 (2013/11/02)
+
+Enhancement
+
+* Cache nodes
+
 # 0.0.3 (2013/11/01)
 
 Changes
