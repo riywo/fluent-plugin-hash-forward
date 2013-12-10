@@ -31,6 +31,15 @@ Basically same with out\_forward plugin. See [http://docs.fluentd.org/articles/o
 
 Following parameters are additionally available:
 
+
+* keepalive (bool)
+
+    Keepalive connection. Default is `false`.
+
+* keepalive_time (time)
+
+    Keepalive expired time. Default is nil (which means to keep connection as long as possible).
+
 * hash\_key\_slice *min*..*max*
 
     Use sliced `tag` as a hash key to determine a forwarding node. Default: use entire `tag`. 
