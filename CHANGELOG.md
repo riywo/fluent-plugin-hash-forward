@@ -1,3 +1,9 @@
+# 0.3.0 (2013/12/11)
+
+Enhancement
+
+* Add `keepalive` and `keepalive_time` option
+
 # 0.2.0 (2013/11/02)
 
 Enhancement
