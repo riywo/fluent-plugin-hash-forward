@@ -4,7 +4,7 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
   Fluent::Plugin.register_output('hash_forward', self)
 
   config_param :hash_key_slice, :string, :default => nil
-  config_param :keepalive, :bool, :default => true
+  config_param :keepalive, :bool, :default => false
   config_param :keepalive_time, :time, :default => nil # infinite
 
   def configure(conf)
@@ -145,7 +145,7 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
         sock_write(sock, tag, chunk)
         node.heartbeat(false)
       rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNABORTED, Errno::ETIMEDOUT => e
-        $log.warn "out_keep_forward: #{e.class} #{e.message}"
+        $log.warn "out_hash_forward: #{e.class} #{e.message}"
         sock = reconnect(node)
         retry
       end
