@@ -1,3 +1,9 @@
+# 0.3.1 (2013/12/11)
+
+Changes
+
+* Change default `keepalive` option to false
+
 # 0.3.0 (2013/12/11)
 
 Enhancement
