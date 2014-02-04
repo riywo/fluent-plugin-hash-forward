@@ -3,10 +3,10 @@ $:.push File.expand_path("../lib", __FILE__)
 
 Gem::Specification.new do |s|
   s.name        = "fluent-plugin-hash-forward"
-  s.version     = "0.3.1"
+  s.version     = "0.3.2"
   s.authors     = ["Ryosuke IWANAGA", "Naotoshi Seo"]
   s.email       = ["riywo.jp@gmail.com", "sonots@gmail.com"]
-  s.homepage    = "https://github.com/sonots/fluent-plugin-hash-forward"
+  s.homepage    = "https://github.com/riywo/fluent-plugin-hash-forward"
   s.summary     = %q{Fluentd plugin to keep forwarding messsages of a specific tag pattern to a specific node}
   s.description = s.summary
   s.licenses    = ["MIT"]
