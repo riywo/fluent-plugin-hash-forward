@@ -314,5 +314,16 @@ describe Fluent::HashForwardOutput do
       end
     end
   end
+
+  describe 'test heartbeat_type :none' do
+    let(:tag) { 'test.tag' }
+    let(:es) { Array.new(1) }
+    let(:chain) { Fluent::NullOutputChain.instance }
+    let(:config) { CONFIG + %[heartbeat_type none] }
+
+    context 'NonHeartbeatNode' do
+      it { driver.nodes(tag).first.class.should == Fluent::HashForwardOutput::NonHeartbeatNode }
+    end
+  end
 end
 

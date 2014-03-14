@@ -1,4 +1,5 @@
 require 'fluent/plugin/out_forward'
+require 'forwardable'
 
 class Fluent::HashForwardOutput < Fluent::ForwardOutput
   Fluent::Plugin.register_output('hash_forward', self)
@@ -11,6 +12,18 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
   config_param :hash_key_slice, :string, :default => nil
   config_param :keepalive, :bool, :default => false
   config_param :keepalive_time, :time, :default => nil # infinite
+  config_param :heartbeat_type, :default => :udp do |val|
+    case val.downcase
+    when 'tcp'
+      :tcp
+    when 'udp'
+      :udp
+    when 'none' # custom
+      :none
+    else
+      raise ConfigError, "forward output heartbeat type should be 'tcp' or 'udp', or 'none'"
+    end
+  end
 
   def configure(conf)
     super
@@ -22,6 +35,10 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
         @hash_key_slice_lindex = lindex.to_i
         @hash_key_slice_rindex = rindex.to_i
       end
+    end
+
+    if @heartbeat_type == :none
+      @nodes = @nodes.map {|node| NonHeartbeatNode.new(node) }
     end
 
     @standby_nodes, @regular_nodes = @nodes.partition {|n| n.standby? }
@@ -50,7 +67,11 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
   end
 
   def shutdown
-    super
+    @finished = true
+    @loop.watchers.each {|w| w.detach }
+    @loop.stop unless @heartbeat_type == :none # custom
+    @thread.join
+    @usock.close if @usock
     stop_watcher
   end
 
@@ -64,6 +85,37 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     if @watcher
       @watcher.terminate
       @watcher.join
+    end
+  end
+
+  # Override to disable heartbeat
+  def run
+    unless @heartbeat_type == :none
+      super
+    end
+  end
+
+  # Delegate to Node instance disabling heartbeat
+  class NonHeartbeatNode
+    extend Forwardable
+    attr_reader :node
+    def_delegators :@node, :standby?, :resolved_host, :resolve_dns!, :to_msgpack,
+      :name, :host, :port, :weight, :weight=, :standby=, :available=, :sockaddr
+
+    def initialize(node)
+      @node = node
+    end
+
+    def available?
+      true
+    end
+
+    def tick
+      false
+    end
+
+    def heartbeat(detect=true)
+      true
     end
   end
 

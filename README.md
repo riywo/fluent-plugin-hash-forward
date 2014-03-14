@@ -40,6 +40,11 @@ Following parameters are additionally available:
 
     Keepalive expired time. Default is nil (which means to keep connection as long as possible).
 
+* heartbeat_type
+
+    The transport protocol to use for heartbeats. The default is “udp”, but you can select “tcp” as well.
+    Furthermore, in hash_forward, you can also select "none" to disable heartbeat. 
+
 * hash\_key\_slice *min*..*max*
 
     Use sliced `tag` as a hash key to determine a forwarding node. Default: use entire `tag`. 
