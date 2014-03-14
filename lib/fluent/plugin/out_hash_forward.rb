@@ -202,7 +202,7 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
         sock_write(sock, tag, chunk)
         node.heartbeat(false)
       rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNABORTED, Errno::ETIMEDOUT => e
-        log.warn "out_hash_forward: #{e.class} #{e.message}"
+        log.warn "out_hash_forward: send_data failed #{e.class} #{e.message}, try to reconnect", :host=>node.host, :port=>node.port
         sock = reconnect(node)
         retry
       end
