@@ -1,3 +1,9 @@
+# 0.3.3 (2014/03/17)
+
+Enhancement:
+
+* Support `heartbeat_type` `none`
+
 # 0.3.2 (2014/02/04)
 
 Enhancement:

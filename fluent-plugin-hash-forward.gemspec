@@ -3,7 +3,7 @@ $:.push File.expand_path("../lib", __FILE__)
 
 Gem::Specification.new do |s|
   s.name        = "fluent-plugin-hash-forward"
-  s.version     = "0.3.2"
+  s.version     = "0.3.3"
   s.authors     = ["Ryosuke IWANAGA", "Naotoshi Seo"]
   s.email       = ["riywo.jp@gmail.com", "sonots@gmail.com"]
   s.homepage    = "https://github.com/riywo/fluent-plugin-hash-forward"
