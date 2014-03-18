@@ -205,6 +205,8 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
         log.warn "out_hash_forward: send_data failed #{e.class} #{e.message}, try to reconnect", :host=>node.host, :port=>node.port
         sock = reconnect(node)
         retry
+      ensure
+        sock.close if sock and !@keepalive
       end
     end
   end
