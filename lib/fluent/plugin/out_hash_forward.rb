@@ -125,6 +125,9 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     error = nil
     nodes = nodes(tag)
 
+    if @keepalive and primary_available?(nodes)
+      sock_close(nodes.last) # close standby
+    end
     # below is just copy from out_forward
     nodes.each do |node|
       if node.available?
@@ -171,6 +174,10 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     standby_index = @standby_weight_array.size > 0 ? get_index(hash_key, @standby_weight_array.size) : 0
     nodes = [@regular_weight_array[regular_index], @standby_weight_array[standby_index]].compact
     @cache_nodes[tag] = nodes
+  end
+
+  def primary_available?(nodes)
+    nodes.size > 1 && nodes.first.available?
   end
 
   # hashing(key) mod N
@@ -271,6 +278,17 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
           end
         end
       end
+    end
+  end
+
+  def sock_close(node)
+    get_mutex(node).synchronize do
+      if sock = get_sock[node]
+        sock.close rescue IOError
+        log.info "out_hash_forward: keepalive connection closed", :host=>node.host, :port=>node.port
+      end
+      get_sock[node] = nil
+      get_sock_expired_at[node] = nil
     end
   end
 
