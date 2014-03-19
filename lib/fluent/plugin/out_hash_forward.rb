@@ -192,21 +192,29 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
 
   # Override for keepalive
   def send_data(node, tag, chunk)
+    sock = nil
     get_mutex(node).synchronize do
-      sock = get_sock[node]
+      sock = get_sock[node] if @keepalive
       unless sock
         sock = reconnect(node)
+        cache_sock(node, sock) if @keepalive
       end
 
       begin
         sock_write(sock, tag, chunk)
         node.heartbeat(false)
+        log.debug "out_hash_forward: write to", :host=>node.host, :port=>node.port
       rescue Errno::EPIPE, Errno::ECONNRESET, Errno::ECONNABORTED, Errno::ETIMEDOUT => e
-        log.warn "out_hash_forward: send_data failed #{e.class} #{e.message}, try to reconnect", :host=>node.host, :port=>node.port
-        sock = reconnect(node)
-        retry
+        log.warn "out_hash_forward: send_data failed #{e.class} #{e.message}", :host=>node.host, :port=>node.port
+        if @keepalive
+          sock.close rescue IOError
+          cache_sock(node, nil)
+        end
+        raise e
       ensure
-        sock.close if sock and !@keepalive
+        unless @keepalive
+          sock.close if sock
+        end
       end
     end
   end
@@ -218,11 +226,6 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
 
     opt = [@send_timeout.to_i, 0].pack('L!L!')  # struct timeval
     sock.setsockopt(Socket::SOL_SOCKET, Socket::SO_SNDTIMEO, opt)
-
-    if @keepalive
-      get_sock[node] = sock
-      get_sock_expired_at[node] = Time.now + @keepalive_time if @keepalive_time
-    end
 
     sock
   end
@@ -264,6 +267,7 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
             sock.close rescue IOError if sock
             @sock[thread_id][node] = nil
             @sock_expired_at[thread_id][node] = nil
+            log.debug "out_hash_forward: keepalive connection closed", :host=>node.host, :port=>node.port, :thread_id=>thread_id
           end
         end
       end
@@ -274,6 +278,17 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     thread_id = Thread.current.object_id
     @mutex[thread_id] ||= {}
     @mutex[thread_id][node] ||= Mutex.new
+  end
+
+  def cache_sock(node, sock)
+    if sock
+      get_sock[node] = sock
+      get_sock_expired_at[node] = Time.now + @keepalive_time if @keepalive_time
+      log.info "out_hash_forward: keepalive connection opened", :host=>node.host, :port=>node.port
+    else
+      get_sock[node] = nil
+      get_sock_expired_at[node] = nil
+    end
   end
 
   def get_sock
