@@ -1,3 +1,10 @@
+# 0.3.5 (2014/03/24)
+
+Fixes
+
+* Explicitly close standby node socket on recovering in keepalive
+* Explicitly close socket if an error raised even in keepalive
+
 # 0.3.4 (2014/03/19)
 
 Fixes
