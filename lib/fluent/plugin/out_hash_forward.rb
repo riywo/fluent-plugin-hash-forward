@@ -21,7 +21,7 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     when 'none' # custom
       :none
     else
-      raise ConfigError, "forward output heartbeat type should be 'tcp' or 'udp', or 'none'"
+      raise ::Fluent::ConfigError, "forward output heartbeat type should be 'tcp' or 'udp', or 'none'"
     end
   end
 
