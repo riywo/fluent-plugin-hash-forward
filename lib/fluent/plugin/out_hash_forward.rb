@@ -9,9 +9,20 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     define_method("log") { $log }
   end
 
+  desc "Use sliced tag as a hash key to determine a forwarding node."
   config_param :hash_key_slice, :string, :default => nil
+  desc "Keepalive connection."
   config_param :keepalive, :bool, :default => false
-  config_param :keepalive_time, :time, :default => nil # infinite
+  desc <<-DESC
+ Keepalive expired time.
+When specified nil, keep connection as long as possible.
+DESC
+  config_param :keepalive_time, :time, :default => nil
+  desc <<-DESC
+The transport protocol to use for heartbeats.
+The default is “udp”, but you can select “tcp” as well.
+Furthermore, in hash_forward, you can also select "none" to disable heartbeat.
+DESC
   config_param :heartbeat_type, :default => :udp do |val|
     case val.downcase
     when 'tcp'
