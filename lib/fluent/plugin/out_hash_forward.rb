@@ -9,6 +9,14 @@ class Fluent::HashForwardOutput < Fluent::ForwardOutput
     define_method("log") { $log }
   end
 
+  # For fluentd v0.12.16 or earlier
+  class << self
+    unless method_defined?(:desc)
+      def desc(description)
+      end
+    end
+  end
+
   desc "Use sliced tag as a hash key to determine a forwarding node."
   config_param :hash_key_slice, :string, :default => nil
   desc "Keepalive connection."
