@@ -18,7 +18,7 @@ describe Fluent::HashForwardOutput do
 
     <secondary>
       type file
-      path /var/log/fluent/forward-failed
+      path /tmp/forward-failed
     </secondary>
   ]
   let(:driver) { Fluent::Test::OutputTestDriver.new(Fluent::HashForwardOutput, tag).configure(config).instance }
