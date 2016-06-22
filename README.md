@@ -1,4 +1,4 @@
-# fluent-plugin-hash-forward
+# fluent-plugin-hash-forward, a plugin for [Fluentd](http://fluentd.org)
 
 Fluentd plugin to keep forwarding messages of a specific tag pattern to a specific node
 
